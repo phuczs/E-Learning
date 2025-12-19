@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { FiFile, FiTrash2, FiClock } from 'react-icons/fi';
-import { lectureAPI } from '../../services/api';
+import { lectureService } from '../../services/lectureService';
 
 const LectureList = ({ lectures, onDelete }) => {
     const navigate = useNavigate();
@@ -9,7 +9,7 @@ const LectureList = ({ lectures, onDelete }) => {
         e.stopPropagation();
         if (window.confirm('Are you sure you want to delete this lecture?')) {
             try {
-                await lectureAPI.delete(id);
+                await lectureService.delete(id);
                 if (onDelete) onDelete();
             } catch (err) {
                 alert('Failed to delete lecture');

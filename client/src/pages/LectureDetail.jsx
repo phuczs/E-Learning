@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { lectureAPI, flashcardAPI, quizAPI } from '../services/api';
+import { lectureService } from '../services/lectureService';
+import { flashcardService } from '../services/flashcardService';
+import { quizService } from '../services/quizService';
 import FlashcardViewer from '../components/flashcards/FlashcardViewer';
 import QuizTaker from '../components/quiz/QuizTaker';
 import { FiArrowLeft, FiCreditCard, FiFileText } from 'react-icons/fi';
@@ -25,9 +27,9 @@ const LectureDetail = () => {
     const fetchLectureData = async () => {
         try {
             const [lectureRes, flashcardsRes, quizzesRes] = await Promise.all([
-                lectureAPI.getById(id),
-                flashcardAPI.getByLecture(id),
-                quizAPI.getByLecture(id)
+                lectureService.getById(id),
+                flashcardService.getByLecture(id),
+                quizService.getByLecture(id)
             ]);
 
             setLecture(lectureRes.data.lecture);
@@ -44,7 +46,7 @@ const LectureDetail = () => {
     const handleGenerateFlashcards = async () => {
         setGenerating(true);
         try {
-            await flashcardAPI.generate(id, 10);
+            await flashcardService.generate(id, 10);
             await fetchLectureData();
             setActiveTab('flashcards');
         } catch (error) {
@@ -57,7 +59,7 @@ const LectureDetail = () => {
     const handleGenerateQuiz = async () => {
         setGenerating(true);
         try {
-            await quizAPI.generate(id, { title: `Quiz: ${lecture.title}`, questionCount: 5 });
+            await quizService.generate(id, { title: `Quiz: ${lecture.title}`, questionCount: 5 });
             await fetchLectureData();
             setActiveTab('quiz');
         } catch (error) {
@@ -69,7 +71,7 @@ const LectureDetail = () => {
 
     const handleUpdateFlashcard = async (flashcardId, data) => {
         try {
-            await flashcardAPI.update(flashcardId, data);
+            await flashcardService.update(flashcardId, data);
             await fetchLectureData();
         } catch (error) {
             alert('Failed to update flashcard');
@@ -78,7 +80,7 @@ const LectureDetail = () => {
 
     const handleDeleteFlashcard = async (flashcardId) => {
         try {
-            await flashcardAPI.delete(flashcardId);
+            await flashcardService.delete(flashcardId);
             await fetchLectureData();
         } catch (error) {
             alert('Failed to delete flashcard');
@@ -87,7 +89,7 @@ const LectureDetail = () => {
 
     const handleSubmitQuiz = async (answers) => {
         try {
-            const response = await quizAPI.submit(selectedQuiz._id, answers);
+            const response = await quizService.submit(selectedQuiz._id, answers);
             return response.data;
         } catch (error) {
             alert('Failed to submit quiz');

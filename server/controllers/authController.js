@@ -83,6 +83,42 @@ export const login = async (req, res, next) => {
     }
 };
 
+// @desc    Google OAuth login/register
+// @route   POST /api/auth/google
+// @access  Public
+export const googleAuth = async (req, res, next) => {
+    try {
+        const { email, full_name, uid } = req.body;
+
+        // Check if user exists
+        let user = await User.findOne({ email });
+
+        if (!user) {
+            // Create new user with Google account
+            user = await User.create({
+                email,
+                password_hash: uid + process.env.JWT_SECRET, // Use Firebase UID + secret as password
+                full_name
+            });
+        }
+
+        // Generate token
+        const token = generateToken(user._id);
+
+        res.json({
+            success: true,
+            token,
+            user: {
+                id: user._id,
+                email: user.email,
+                full_name: user.full_name
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 // @desc    Get current user
 // @route   GET /api/auth/me
 // @access  Private

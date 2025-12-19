@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '../../context/AuthContext';
 import { FiMail, FiLock } from 'react-icons/fi';
+import { FcGoogle } from 'react-icons/fc';
 
 const loginSchema = z.object({
     email: z.string().email('Invalid email address'),
@@ -13,7 +14,8 @@ const loginSchema = z.object({
 
 const Login = () => {
     const [error, setError] = useState('');
-    const { login } = useAuth();
+    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+    const { login, loginWithGoogle } = useAuth();
     const navigate = useNavigate();
 
     const {
@@ -32,6 +34,20 @@ const Login = () => {
             navigate('/dashboard');
         } catch (err) {
             setError(err.response?.data?.message || 'Login failed. Please try again.');
+        }
+    };
+
+    const handleGoogleLogin = async () => {
+        setError('');
+        setIsGoogleLoading(true);
+
+        try {
+            await loginWithGoogle();
+            navigate('/dashboard');
+        } catch (err) {
+            setError(err.message || 'Google login failed. Please try again.');
+        } finally {
+            setIsGoogleLoading(false);
         }
     };
 
@@ -90,6 +106,22 @@ const Login = () => {
                         {isSubmitting ? 'Logging in...' : 'Login'}
                     </button>
                 </form>
+
+                <div style={{ display: 'flex', alignItems: 'center', margin: '1.5rem 0', gap: '1rem' }}>
+                    <div style={{ flex: 1, height: '1px', background: 'var(--border)' }}></div>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>OR</span>
+                    <div style={{ flex: 1, height: '1px', background: 'var(--border)' }}></div>
+                </div>
+
+                <button 
+                    onClick={handleGoogleLogin} 
+                    className="btn btn-outline" 
+                    style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                    disabled={isGoogleLoading}
+                >
+                    <FcGoogle size={20} />
+                    {isGoogleLoading ? 'Signing in...' : 'Continue with Google'}
+                </button>
 
                 <p className="text-center mt-3" style={{ color: 'var(--text-secondary)' }}>
                     Don't have an account?{' '}

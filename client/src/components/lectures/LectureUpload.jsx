@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { lectureAPI } from '../../services/api';
+import { lectureService } from '../../services/lectureService';
 import { FiUpload, FiFile } from 'react-icons/fi';
 
 const LectureUpload = ({ onUploadSuccess }) => {
@@ -58,7 +58,7 @@ const LectureUpload = ({ onUploadSuccess }) => {
         formData.append('tone', tone);
 
         try {
-            await lectureAPI.upload(formData);
+            await lectureService.upload(formData);
             setFile(null);
             setTitle('');
             setTone('concise');

@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect, useContext } from 'react';
-import { authAPI } from '../services/api';
+import { authService } from '../services/authService';
+import { signInWithGoogle } from '../utils/firebase';
 
 const AuthContext = createContext();
 
@@ -23,7 +24,7 @@ export const AuthProvider = ({ children }) => {
         if (token && savedUser) {
             setUser(JSON.parse(savedUser));
             // Verify token is still valid
-            authAPI.getMe()
+            authService.getMe()
                 .then(res => {
                     setUser(res.data.user);
                 })
@@ -39,7 +40,7 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = async (email, password) => {
-        const response = await authAPI.login({ email, password });
+        const response = await authService.login({ email, password });
         const { token, user } = response.data;
 
         localStorage.setItem('token', token);
@@ -50,7 +51,26 @@ export const AuthProvider = ({ children }) => {
     };
 
     const register = async (email, password, full_name) => {
-        const response = await authAPI.register({ email, password, full_name });
+        const response = await authService.register({ email, password, full_name });
+        const { token, user } = response.data;
+
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+        setUser(user);
+
+        return response.data;
+    };
+
+    const loginWithGoogle = async () => {
+        const firebaseUser = await signInWithGoogle();
+        
+        // Send Firebase user data to backend
+        const response = await authService.googleAuth({
+            email: firebaseUser.email,
+            full_name: firebaseUser.displayName,
+            uid: firebaseUser.uid
+        });
+
         const { token, user } = response.data;
 
         localStorage.setItem('token', token);
@@ -71,6 +91,7 @@ export const AuthProvider = ({ children }) => {
         loading,
         login,
         register,
+        loginWithGoogle,
         logout,
         isAuthenticated: !!user
     };

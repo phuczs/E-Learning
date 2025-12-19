@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { lectureAPI } from '../services/api';
+import { lectureService } from '../services/lectureService';
 import LectureUpload from '../components/lectures/LectureUpload';
 import LectureList from '../components/lectures/LectureList';
 
@@ -9,7 +9,7 @@ const Dashboard = () => {
 
     const fetchLectures = async () => {
         try {
-            const response = await lectureAPI.getAll();
+            const response = await lectureService.getAll();
             setLectures(response.data.lectures);
         } catch (error) {
             console.error('Failed to fetch lectures:', error);
