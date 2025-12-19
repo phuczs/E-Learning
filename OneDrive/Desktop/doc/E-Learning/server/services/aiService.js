@@ -1,24 +1,22 @@
-import OpenAI from 'openai';
+import { Ollama } from 'ollama';
 
-let openai = null;
+let ollama = null;
 
 /**
- * Get or initialize OpenAI client
+ * Get or initialize Ollama client
  */
-const getOpenAI = () => {
-    if (!openai) {
-        if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'your-openai-api-key-here' || process.env.OPENAI_API_KEY === 'sk-your-openai-api-key-here') {
-            throw new Error('OpenAI API key is not configured. Please add a valid OPENAI_API_KEY to your .env file. Get your API key from https://platform.openai.com/api-keys');
-        }
-        openai = new OpenAI({
-            apiKey: process.env.OPENAI_API_KEY
+const getOllama = () => {
+    if (!ollama) {
+        // Initialize Ollama client (connects to local Ollama server by default at http://localhost:11434)
+        ollama = new Ollama({
+            host: process.env.OLLAMA_HOST || 'http://localhost:11434'
         });
     }
-    return openai;
+    return ollama;
 };
 
 /**
- * Generate summary from text content
+ * Generate summary from text content using Ollama
  * @param {string} text - Text content to summarize
  * @param {string} tone - Tone of summary (concise, detailed, simple, academic)
  * @returns {Promise<string>} - Generated summary in markdown
@@ -42,8 +40,8 @@ Format the summary in markdown with:
 Text to summarize:
 ${text.substring(0, 12000)}`; // Limit to avoid token limits
 
-        const response = await getOpenAI().chat.completions.create({
-            model: 'gpt-3.5-turbo',
+        const response = await getOllama().chat({
+            model: 'qwen2.5:3b',
             messages: [
                 {
                     role: 'system',
@@ -54,11 +52,13 @@ ${text.substring(0, 12000)}`; // Limit to avoid token limits
                     content: prompt
                 }
             ],
-            temperature: 0.7,
-            max_tokens: 1500
+            options: {
+                temperature: 0.7,
+                num_predict: 1500
+            }
         });
 
-        return response.choices[0].message.content;
+        return response.message.content;
     } catch (error) {
         console.error('Error generating summary:', error);
         throw new Error('Failed to generate summary: ' + error.message);
@@ -66,7 +66,7 @@ ${text.substring(0, 12000)}`; // Limit to avoid token limits
 };
 
 /**
- * Generate flashcards from text content
+ * Generate flashcards from text content using Ollama
  * @param {string} text - Text content to create flashcards from
  * @param {number} count - Number of flashcards to generate
  * @returns {Promise<Array>} - Array of flashcard objects
@@ -86,26 +86,30 @@ Return the flashcards as a JSON array with this structure:
   }
 ]
 
+IMPORTANT: Return ONLY the JSON array, no additional text or markdown formatting.
+
 Content:
 ${text.substring(0, 10000)}`;
 
-        const response = await getOpenAI().chat.completions.create({
-            model: 'gpt-3.5-turbo',
+        const response = await getOllama().chat({
+            model: 'qwen2.5:3b',
             messages: [
                 {
                     role: 'system',
-                    content: 'You are an expert at creating educational flashcards. Return only valid JSON.'
+                    content: 'You are an expert at creating educational flashcards. Return only valid JSON array, no markdown code blocks or additional text.'
                 },
                 {
                     role: 'user',
                     content: prompt
                 }
             ],
-            temperature: 0.8,
-            max_tokens: 2000
+            options: {
+                temperature: 0.8,
+                num_predict: 2000
+            }
         });
 
-        const content = response.choices[0].message.content;
+        const content = response.message.content;
         // Extract JSON from response (handle markdown code blocks)
         const jsonMatch = content.match(/\[[\s\S]*\]/);
         if (!jsonMatch) {
@@ -120,7 +124,7 @@ ${text.substring(0, 10000)}`;
 };
 
 /**
- * Generate quiz from text content
+ * Generate quiz from text content using Ollama
  * @param {string} text - Text content to create quiz from
  * @param {number} questionCount - Number of questions to generate
  * @returns {Promise<Object>} - Quiz object with questions
@@ -150,26 +154,30 @@ Return as JSON with this structure:
   ]
 }
 
+IMPORTANT: Return ONLY the JSON object, no additional text or markdown formatting.
+
 Content:
 ${text.substring(0, 10000)}`;
 
-        const response = await getOpenAI().chat.completions.create({
-            model: 'gpt-3.5-turbo',
+        const response = await getOllama().chat({
+            model: 'qwen2.5:3b',
             messages: [
                 {
                     role: 'system',
-                    content: 'You are an expert at creating educational quizzes. Return only valid JSON.'
+                    content: 'You are an expert at creating educational quizzes. Return only valid JSON object, no markdown code blocks or additional text.'
                 },
                 {
                     role: 'user',
                     content: prompt
                 }
             ],
-            temperature: 0.8,
-            max_tokens: 2500
+            options: {
+                temperature: 0.8,
+                num_predict: 2500
+            }
         });
 
-        const content = response.choices[0].message.content;
+        const content = response.message.content;
         // Extract JSON from response
         const jsonMatch = content.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
