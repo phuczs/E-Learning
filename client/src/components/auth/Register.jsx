@@ -1,52 +1,42 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useAuth } from '../../context/AuthContext';
 import { FiMail, FiLock, FiUser } from 'react-icons/fi';
 
-const Register = () => {
-    const [formData, setFormData] = useState({
-        full_name: '',
-        email: '',
-        password: '',
-        confirmPassword: ''
-    });
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
+const registerSchema = z.object({
+    full_name: z.string().min(2, 'Name must be at least 2 characters'),
+    email: z.string().email('Invalid email address'),
+    password: z.string().min(6, 'Password must be at least 6 characters'),
+    confirmPassword: z.string()
+}).refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword']
+});
 
-    const { register } = useAuth();
+const Register = () => {
+    const [error, setError] = useState('');
+    const { register: registerUser } = useAuth();
     const navigate = useNavigate();
 
-    const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
-    };
+    const {
+        register,
+        handleSubmit,
+        formState: { errors, isSubmitting }
+    } = useForm({
+        resolver: zodResolver(registerSchema)
+    });
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const onSubmit = async (data) => {
         setError('');
 
-        // Validation
-        if (formData.password !== formData.confirmPassword) {
-            setError('Passwords do not match');
-            return;
-        }
-
-        if (formData.password.length < 8) {
-            setError('Password must be at least 8 characters');
-            return;
-        }
-
-        setLoading(true);
-
         try {
-            await register(formData.email, formData.password, formData.full_name);
+            await registerUser(data.email, data.password, data.full_name);
             navigate('/dashboard');
         } catch (err) {
             setError(err.response?.data?.message || 'Registration failed. Please try again.');
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -64,7 +54,7 @@ const Register = () => {
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit(onSubmit)}>
                     <div className="form-group">
                         <label className="form-label">
                             <FiUser style={{ display: 'inline', marginRight: '0.5rem' }} />
@@ -72,13 +62,15 @@ const Register = () => {
                         </label>
                         <input
                             type="text"
-                            name="full_name"
                             className="form-input"
-                            value={formData.full_name}
-                            onChange={handleChange}
-                            required
+                            {...register('full_name')}
                             placeholder="John Doe"
                         />
+                        {errors.full_name && (
+                            <small style={{ color: 'var(--error)', fontSize: '0.875rem', display: 'block', marginTop: '0.25rem' }}>
+                                {errors.full_name.message}
+                            </small>
+                        )}
                     </div>
 
                     <div className="form-group">
@@ -88,13 +80,15 @@ const Register = () => {
                         </label>
                         <input
                             type="email"
-                            name="email"
                             className="form-input"
-                            value={formData.email}
-                            onChange={handleChange}
-                            required
+                            {...register('email')}
                             placeholder="your@email.com"
                         />
+                        {errors.email && (
+                            <small style={{ color: 'var(--error)', fontSize: '0.875rem', display: 'block', marginTop: '0.25rem' }}>
+                                {errors.email.message}
+                            </small>
+                        )}
                     </div>
 
                     <div className="form-group">
@@ -104,16 +98,15 @@ const Register = () => {
                         </label>
                         <input
                             type="password"
-                            name="password"
                             className="form-input"
-                            value={formData.password}
-                            onChange={handleChange}
-                            required
+                            {...register('password')}
                             placeholder="••••••••"
                         />
-                        <small style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-                            Must be at least 8 characters with uppercase, lowercase, and number
-                        </small>
+                        {errors.password && (
+                            <small style={{ color: 'var(--error)', fontSize: '0.875rem', display: 'block', marginTop: '0.25rem' }}>
+                                {errors.password.message}
+                            </small>
+                        )}
                     </div>
 
                     <div className="form-group">
@@ -123,17 +116,19 @@ const Register = () => {
                         </label>
                         <input
                             type="password"
-                            name="confirmPassword"
                             className="form-input"
-                            value={formData.confirmPassword}
-                            onChange={handleChange}
-                            required
+                            {...register('confirmPassword')}
                             placeholder="••••••••"
                         />
+                        {errors.confirmPassword && (
+                            <small style={{ color: 'var(--error)', fontSize: '0.875rem', display: 'block', marginTop: '0.25rem' }}>
+                                {errors.confirmPassword.message}
+                            </small>
+                        )}
                     </div>
 
-                    <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
-                        {loading ? 'Creating Account...' : 'Sign Up'}
+                    <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={isSubmitting}>
+                        {isSubmitting ? 'Creating Account...' : 'Sign Up'}
                     </button>
                 </form>
 

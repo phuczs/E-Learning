@@ -1,38 +1,37 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useAuth } from '../../context/AuthContext';
 import { FiMail, FiLock } from 'react-icons/fi';
 
-const Login = () => {
-    const [formData, setFormData] = useState({
-        email: '',
-        password: ''
-    });
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
+const loginSchema = z.object({
+    email: z.string().email('Invalid email address'),
+    password: z.string().min(6, 'Password must be at least 6 characters')
+});
 
+const Login = () => {
+    const [error, setError] = useState('');
     const { login } = useAuth();
     const navigate = useNavigate();
 
-    const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
-    };
+    const {
+        register,
+        handleSubmit,
+        formState: { errors, isSubmitting }
+    } = useForm({
+        resolver: zodResolver(loginSchema)
+    });
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const onSubmit = async (data) => {
         setError('');
-        setLoading(true);
 
         try {
-            await login(formData.email, formData.password);
+            await login(data.email, data.password);
             navigate('/dashboard');
         } catch (err) {
             setError(err.response?.data?.message || 'Login failed. Please try again.');
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -50,7 +49,7 @@ const Login = () => {
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit(onSubmit)}>
                     <div className="form-group">
                         <label className="form-label">
                             <FiMail style={{ display: 'inline', marginRight: '0.5rem' }} />
@@ -58,13 +57,15 @@ const Login = () => {
                         </label>
                         <input
                             type="email"
-                            name="email"
                             className="form-input"
-                            value={formData.email}
-                            onChange={handleChange}
-                            required
+                            {...register('email')}
                             placeholder="your@email.com"
                         />
+                        {errors.email && (
+                            <small style={{ color: 'var(--error)', fontSize: '0.875rem', display: 'block', marginTop: '0.25rem' }}>
+                                {errors.email.message}
+                            </small>
+                        )}
                     </div>
 
                     <div className="form-group">
@@ -74,17 +75,19 @@ const Login = () => {
                         </label>
                         <input
                             type="password"
-                            name="password"
                             className="form-input"
-                            value={formData.password}
-                            onChange={handleChange}
-                            required
+                            {...register('password')}
                             placeholder="••••••••"
                         />
+                        {errors.password && (
+                            <small style={{ color: 'var(--error)', fontSize: '0.875rem', display: 'block', marginTop: '0.25rem' }}>
+                                {errors.password.message}
+                            </small>
+                        )}
                     </div>
 
-                    <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
-                        {loading ? 'Logging in...' : 'Login'}
+                    <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={isSubmitting}>
+                        {isSubmitting ? 'Logging in...' : 'Login'}
                     </button>
                 </form>
 
