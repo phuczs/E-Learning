@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { lectureService } from '../services/lectureService';
 import { flashcardService } from '../services/flashcardService';
 import { quizService } from '../services/quizService';
+import { offlineStorage } from '../utils/offlineStorage';
 import FlashcardViewer from '../components/flashcards/FlashcardViewer';
 import QuizTaker from '../components/quiz/QuizTaker';
 import { FiArrowLeft, FiCreditCard, FiFileText } from 'react-icons/fi';
@@ -19,6 +20,8 @@ const LectureDetail = () => {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('summary');
     const [generating, setGenerating] = useState(false);
+    const [flashcardCount, setFlashcardCount] = useState(10);
+    const [quizCount, setQuizCount] = useState(10);
 
     useEffect(() => {
         fetchLectureData();
@@ -26,6 +29,29 @@ const LectureDetail = () => {
 
     const fetchLectureData = async () => {
         try {
+            const isOnline = navigator.onLine;
+
+            // Try to load from IndexedDB first if offline or as fallback
+            if (!isOnline) {
+                console.log('Offline mode - loading from IndexedDB');
+                const cachedLecture = await offlineStorage.getLecture(id);
+                const cachedFlashcards = await offlineStorage.getFlashcardsByLecture(id);
+                const cachedQuizzes = await offlineStorage.getQuizzesByLecture(id);
+                const cachedSummary = await offlineStorage.getSummaryByLecture(id);
+
+                if (cachedLecture) {
+                    setLecture(cachedLecture);
+                    setSummary(cachedSummary?.summary || null);
+                    setFlashcards(cachedFlashcards || []);
+                    setQuizzes(cachedQuizzes || []);
+                    setLoading(false);
+                    return;
+                } else {
+                    throw new Error('Lecture not available offline. Please download it first.');
+                }
+            }
+
+            // Online - fetch from API
             const [lectureRes, flashcardsRes, quizzesRes] = await Promise.all([
                 lectureService.getById(id),
                 flashcardService.getByLecture(id),
@@ -38,6 +64,26 @@ const LectureDetail = () => {
             setQuizzes(quizzesRes.data.quizzes);
         } catch (error) {
             console.error('Failed to fetch lecture data:', error);
+
+            // If online fetch fails, try IndexedDB as fallback
+            if (navigator.onLine) {
+                console.log('API failed - trying IndexedDB fallback');
+                try {
+                    const cachedLecture = await offlineStorage.getLecture(id);
+                    if (cachedLecture) {
+                        const cachedFlashcards = await offlineStorage.getFlashcardsByLecture(id);
+                        const cachedQuizzes = await offlineStorage.getQuizzesByLecture(id);
+                        const cachedSummary = await offlineStorage.getSummaryByLecture(id);
+
+                        setLecture(cachedLecture);
+                        setSummary(cachedSummary?.summary || null);
+                        setFlashcards(cachedFlashcards || []);
+                        setQuizzes(cachedQuizzes || []);
+                    }
+                } catch (offlineError) {
+                    console.error('IndexedDB fallback also failed:', offlineError);
+                }
+            }
         } finally {
             setLoading(false);
         }
@@ -46,7 +92,7 @@ const LectureDetail = () => {
     const handleGenerateFlashcards = async () => {
         setGenerating(true);
         try {
-            await flashcardService.generate(id, 10);
+            await flashcardService.generate(id, flashcardCount);
             await fetchLectureData();
             setActiveTab('flashcards');
         } catch (error) {
@@ -59,7 +105,7 @@ const LectureDetail = () => {
     const handleGenerateQuiz = async () => {
         setGenerating(true);
         try {
-            await quizService.generate(id, { title: `Quiz: ${lecture.title}`, questionCount: 5 });
+            await quizService.generate(id, { title: `Quiz: ${lecture.title}`, questionCount: quizCount });
             await fetchLectureData();
             setActiveTab('quiz');
         } catch (error) {
@@ -137,8 +183,34 @@ const LectureDetail = () => {
                 <div className="card">
                     <h2 className="mb-3">AI Summary</h2>
                     {summary ? (
-                        <div style={{ color: 'var(--text-secondary)' }}>
-                            <ReactMarkdown>{summary.content_markdown}</ReactMarkdown>
+                        <div className="markdown-content" style={{
+                            color: 'var(--text-secondary)',
+                            lineHeight: '1.8',
+                            fontSize: '1rem',
+                            wordBreak: 'break-word',
+                            overflowWrap: 'anywhere',
+                            maxWidth: '100%',
+                            overflow: 'hidden',
+                            whiteSpace: 'pre-wrap'
+                        }}>
+                            <ReactMarkdown
+                                components={{
+                                    h1: ({ node, ...props }) => <h1 style={{ color: 'var(--text-primary)', fontSize: '2rem', marginTop: '1.5rem', marginBottom: '0.75rem', borderBottom: '2px solid var(--border)', paddingBottom: '0.5rem' }} {...props} />,
+                                    h2: ({ node, ...props }) => <h2 style={{ color: 'var(--text-primary)', fontSize: '1.75rem', marginTop: '1.5rem', marginBottom: '0.75rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.4rem' }} {...props} />,
+                                    h3: ({ node, ...props }) => <h3 style={{ color: 'var(--text-primary)', fontSize: '1.5rem', marginTop: '1.5rem', marginBottom: '0.75rem' }} {...props} />,
+                                    h4: ({ node, ...props }) => <h4 style={{ color: 'var(--text-primary)', fontSize: '1.25rem', marginTop: '1.5rem', marginBottom: '0.75rem' }} {...props} />,
+                                    p: ({ node, ...props }) => <p style={{ margin: '1rem 0', lineHeight: '1.8', wordBreak: 'break-word', overflowWrap: 'anywhere' }} {...props} />,
+                                    ul: ({ node, ...props }) => <ul style={{ margin: '1rem 0', paddingLeft: '2rem' }} {...props} />,
+                                    ol: ({ node, ...props }) => <ol style={{ margin: '1rem 0', paddingLeft: '2rem' }} {...props} />,
+                                    li: ({ node, ...props }) => <li style={{ margin: '0.5rem 0', lineHeight: '1.6', wordBreak: 'break-word' }} {...props} />,
+                                    code: ({ node, inline, ...props }) => inline ?
+                                        <code style={{ background: 'var(--bg-tertiary)', padding: '0.2rem 0.4rem', borderRadius: 'var(--radius-sm)', fontFamily: 'monospace', fontSize: '0.9em', color: 'var(--primary-light)' }} {...props} /> :
+                                        <code style={{ display: 'block', background: 'var(--bg-tertiary)', padding: '1rem', borderRadius: 'var(--radius-md)', overflowX: 'auto', margin: '1rem 0' }} {...props} />,
+                                    strong: ({ node, ...props }) => <strong style={{ fontWeight: 700, color: 'var(--text-primary)' }} {...props} />,
+                                }}
+                            >
+                                {summary.content_markdown}
+                            </ReactMarkdown>
                         </div>
                     ) : (
                         <p style={{ color: 'var(--text-muted)' }}>No summary available</p>
@@ -171,6 +243,32 @@ const LectureDetail = () => {
                             </button>
                         </div>
                     )}
+
+                    {flashcards.length > 0 && (
+                        <div className="card mt-3" style={{
+                            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%)',
+                            border: '2px dashed var(--primary)',
+                            textAlign: 'center',
+                            padding: 'var(--spacing-lg)'
+                        }}>
+                            <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--spacing-md)', fontSize: '0.95rem' }}>
+                                Want more practice? Generate additional flashcards!
+                            </p>
+                            <button
+                                onClick={handleGenerateFlashcards}
+                                className="btn btn-primary"
+                                disabled={generating}
+                                style={{
+                                    fontSize: '1rem',
+                                    padding: '0.75rem 1.5rem',
+                                    fontWeight: '600'
+                                }}
+                            >
+                                <FiCreditCard style={{ marginRight: '0.5rem' }} />
+                                {generating ? 'Generating...' : 'Generate More Flashcards'}
+                            </button>
+                        </div>
+                    )}
                 </>
             )}
 
@@ -194,6 +292,32 @@ const LectureDetail = () => {
                                     <p className="mb-3" style={{ color: 'var(--text-muted)' }}>No quizzes yet</p>
                                     <button onClick={handleGenerateQuiz} className="btn btn-primary" disabled={generating}>
                                         {generating ? 'Generating...' : 'Generate Quiz'}
+                                    </button>
+                                </div>
+                            )}
+
+                            {quizzes.length > 0 && (
+                                <div className="card mt-3" style={{
+                                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)',
+                                    border: '2px dashed var(--success)',
+                                    textAlign: 'center',
+                                    padding: 'var(--spacing-lg)'
+                                }}>
+                                    <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--spacing-md)', fontSize: '0.95rem' }}>
+                                        Test your knowledge with another quiz!
+                                    </p>
+                                    <button
+                                        onClick={handleGenerateQuiz}
+                                        className="btn btn-primary"
+                                        disabled={generating}
+                                        style={{
+                                            fontSize: '1rem',
+                                            padding: '0.75rem 1.5rem',
+                                            fontWeight: '600'
+                                        }}
+                                    >
+                                        <FiFileText style={{ marginRight: '0.5rem' }} />
+                                        {generating ? 'Generating...' : 'Generate Another Quiz'}
                                     </button>
                                 </div>
                             )}

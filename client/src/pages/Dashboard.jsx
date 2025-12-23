@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { lectureService } from '../services/lectureService';
+import { offlineStorage } from '../utils/offlineStorage';
 import LectureUpload from '../components/lectures/LectureUpload';
 import LectureList from '../components/lectures/LectureList';
 
@@ -9,10 +10,33 @@ const Dashboard = () => {
 
     const fetchLectures = async () => {
         try {
+            const isOnline = navigator.onLine;
+
+            // If offline, load from IndexedDB
+            if (!isOnline) {
+                console.log('Offline mode - loading lectures from IndexedDB');
+                const cachedLectures = await offlineStorage.getAllLectures();
+                setLectures(cachedLectures || []);
+                setLoading(false);
+                return;
+            }
+
+            // Online - fetch from API
             const response = await lectureService.getAll();
             setLectures(response.data.lectures);
         } catch (error) {
             console.error('Failed to fetch lectures:', error);
+
+            // If API fails, try IndexedDB fallback
+            try {
+                const cachedLectures = await offlineStorage.getAllLectures();
+                if (cachedLectures && cachedLectures.length > 0) {
+                    console.log('Using cached lectures as fallback');
+                    setLectures(cachedLectures);
+                }
+            } catch (offlineError) {
+                console.error('IndexedDB fallback failed:', offlineError);
+            }
         } finally {
             setLoading(false);
         }

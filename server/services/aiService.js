@@ -131,7 +131,7 @@ ${text.substring(0, 10000)}`;
  */
 export const generateQuiz = async (text, questionCount = 5) => {
     try {
-        const prompt = `Create a ${questionCount}-question multiple choice quiz from the following content.
+        const prompt = `Create a ${questionCount}-question multiple choice quiz from the following content.Generate at least 10 questions.
 Each question should have:
 - A clear question text
 - 4 options (A, B, C, D)

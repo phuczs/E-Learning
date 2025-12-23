@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FiChevronLeft, FiChevronRight, FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { FiChevronLeft, FiChevronRight, FiEdit2, FiTrash2, FiRotateCw } from 'react-icons/fi';
 
 const FlashcardViewer = ({ flashcards, onUpdate, onDelete }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -96,7 +96,8 @@ const FlashcardViewer = ({ flashcards, onUpdate, onDelete }) => {
                         <div className="flashcard-inner">
                             <div className="flashcard-front">
                                 <h3>{currentCard.front_text}</h3>
-                                <p style={{ color: 'var(--text-muted)', marginTop: '1rem' }}>
+                                <p>
+                                    <FiRotateCw />
                                     Click to reveal answer
                                 </p>
                             </div>
