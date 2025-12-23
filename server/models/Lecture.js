@@ -15,6 +15,16 @@ const lectureSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    file_path: {
+        type: String,
+        required: false // Optional for backward compatibility
+    },
+    resource_type: {
+        type: String,
+        required: false, // Optional for backward compatibility
+        enum: ['image', 'raw', 'video'],
+        default: 'raw'
+    },
     raw_content: {
         type: String,
         required: true

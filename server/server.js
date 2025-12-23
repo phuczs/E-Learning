@@ -1,5 +1,15 @@
-import express from 'express';
+// Load env vars FIRST - before any imports
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load .env file with explicit path
+dotenv.config({ path: join(__dirname, '.env') });
+
+import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -11,9 +21,6 @@ import authRoutes from './routes/auth.js';
 import lectureRoutes from './routes/lectures.js';
 import flashcardRoutes from './routes/flashcards.js';
 import quizRoutes from './routes/quizzes.js';
-
-// Load env vars
-dotenv.config();
 
 // Connect to database
 connectDB();

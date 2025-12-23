@@ -5,24 +5,43 @@ import path from 'path';
 
 /**
  * Extract text from uploaded file based on file type
- * @param {string} filePath - Path to the uploaded file
+ * @param {Buffer|string} fileInput - File buffer or path to the uploaded file
  * @param {string} mediaType - Type of media (pdf, docx, txt)
+ * @param {string} originalname - Original filename (optional, for buffer input)
  * @returns {Promise<string>} - Extracted text content
  */
-export const extractTextFromFile = async (filePath, mediaType) => {
+export const extractTextFromFile = async (fileInput, mediaType, originalname = '') => {
     try {
+        // Check if input is a buffer or file path
+        const isBuffer = Buffer.isBuffer(fileInput);
+
         switch (mediaType) {
             case 'pdf':
-                const pdfBuffer = await fs.readFile(filePath);
+                let pdfBuffer;
+                if (isBuffer) {
+                    pdfBuffer = fileInput;
+                } else {
+                    pdfBuffer = await fs.readFile(fileInput);
+                }
                 const pdfData = await pdf(pdfBuffer);
                 return pdfData.text;
 
             case 'docx':
-                const docxResult = await mammoth.extractRawText({ path: filePath });
+                let docxResult;
+                if (isBuffer) {
+                    docxResult = await mammoth.extractRawText({ buffer: fileInput });
+                } else {
+                    docxResult = await mammoth.extractRawText({ path: fileInput });
+                }
                 return docxResult.value;
 
             case 'txt':
-                const txtContent = await fs.readFile(filePath, 'utf-8');
+                let txtContent;
+                if (isBuffer) {
+                    txtContent = fileInput.toString('utf-8');
+                } else {
+                    txtContent = await fs.readFile(fileInput, 'utf-8');
+                }
                 return txtContent;
 
             case 'image':
