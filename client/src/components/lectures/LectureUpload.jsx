@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import { lectureService } from '../../services/lectureService';
 import { FiUpload, FiFile } from 'react-icons/fi';
 
@@ -9,6 +10,7 @@ const LectureUpload = ({ onUploadSuccess }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [dragActive, setDragActive] = useState(false);
+    const { toast } = useToast();
 
     const handleDrag = (e) => {
         e.preventDefault();
@@ -63,8 +65,18 @@ const LectureUpload = ({ onUploadSuccess }) => {
             setTitle('');
             setTone('concise');
             if (onUploadSuccess) onUploadSuccess();
+            toast({
+                title: 'Upload successful',
+                description: 'Your lecture was uploaded and summarized successfully.',
+                variant: 'success',
+            });
         } catch (err) {
             setError(err.response?.data?.message || 'Upload failed');
+            toast({
+                title: 'Upload failed',
+                description: err?.response?.data?.message || 'An error occurred. Please try again.',
+                variant: 'destructive',
+            });
         } finally {
             setLoading(false);
         }

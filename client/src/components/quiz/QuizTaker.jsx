@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { FiCheckCircle, FiXCircle } from 'react-icons/fi';
+import { useToast } from '@/hooks/use-toast';
 
 const QuizTaker = ({ quiz, onSubmit }) => {
     const [answers, setAnswers] = useState(Array(quiz.questions.length).fill(null));
     const [submitted, setSubmitted] = useState(false);
     const [results, setResults] = useState(null);
+    const { toast } = useToast();
 
     const handleSelectOption = (questionIndex, optionIndex) => {
         if (submitted) return;
@@ -15,11 +17,22 @@ const QuizTaker = ({ quiz, onSubmit }) => {
 
     const handleSubmit = async () => {
         if (answers.some(a => a === null)) {
-            alert('Please answer all questions');
+            toast({
+                title: 'Incomplete quiz',
+                description: 'Please answer all questions before submitting.',
+                variant: 'destructive',
+            });
             return;
         }
 
         const result = await onSubmit(answers);
+        if (result) {
+            toast({
+                title: 'Quiz submitted',
+                description: 'Results are now displayed below.',
+                variant: 'success',
+            });
+        }
         setResults(result);
         setSubmitted(true);
     };

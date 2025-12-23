@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { useAuth } from '../../context/AuthContext';
 import { FiMail, FiLock } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
+import { useToast } from '@/hooks/use-toast';
 
 const loginSchema = z.object({
     email: z.string().email('Invalid email address'),
@@ -17,6 +18,7 @@ const Login = () => {
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
     const { login, loginWithGoogle } = useAuth();
     const navigate = useNavigate();
+    const { toast } = useToast();
 
     const {
         register,
@@ -31,9 +33,19 @@ const Login = () => {
 
         try {
             await login(data.email, data.password);
+            toast({
+                title: 'Logged in',
+                description: 'Welcome back! You are now signed in.',
+                variant: 'success',
+            });
             navigate('/dashboard');
         } catch (err) {
             setError(err.response?.data?.message || 'Login failed. Please try again.');
+            toast({
+                title: 'Login failed',
+                description: err?.response?.data?.message || 'An error occurred. Please try again.',
+                variant: 'destructive',
+            });
         }
     };
 
@@ -43,9 +55,19 @@ const Login = () => {
 
         try {
             await loginWithGoogle();
+            toast({
+                title: 'Signed in with Google',
+                description: 'You are now logged in via Google.',
+                variant: 'success',
+            });
             navigate('/dashboard');
         } catch (err) {
             setError(err.message || 'Google login failed. Please try again.');
+            toast({
+                title: 'Google login failed',
+                description: err?.message || 'An error occurred. Please try again.',
+                variant: 'destructive',
+            });
         } finally {
             setIsGoogleLoading(false);
         }

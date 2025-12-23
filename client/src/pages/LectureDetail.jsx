@@ -8,10 +8,12 @@ import FlashcardViewer from '../components/flashcards/FlashcardViewer';
 import QuizTaker from '../components/quiz/QuizTaker';
 import { FiArrowLeft, FiCreditCard, FiFileText } from 'react-icons/fi';
 import ReactMarkdown from 'react-markdown';
+import { useToast } from '@/hooks/use-toast';
 
 const LectureDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { toast } = useToast();
     const [lecture, setLecture] = useState(null);
     const [summary, setSummary] = useState(null);
     const [flashcards, setFlashcards] = useState([]);
@@ -95,8 +97,17 @@ const LectureDetail = () => {
             await flashcardService.generate(id, flashcardCount);
             await fetchLectureData();
             setActiveTab('flashcards');
+            toast({
+                title: 'Flashcards generated',
+                description: `Successfully created ${flashcardCount} flashcards.`,
+                variant: 'success',
+            });
         } catch (error) {
-            alert('Failed to generate flashcards');
+            toast({
+                title: 'Generation failed',
+                description: error?.response?.data?.message || 'Could not generate flashcards. Please try again.',
+                variant: 'destructive',
+            });
         } finally {
             setGenerating(false);
         }
@@ -108,8 +119,17 @@ const LectureDetail = () => {
             await quizService.generate(id, { title: `Quiz: ${lecture.title}`, questionCount: quizCount });
             await fetchLectureData();
             setActiveTab('quiz');
+            toast({
+                title: 'Quiz generated',
+                description: `Successfully created a quiz with ${quizCount} questions.`,
+                variant: 'success',
+            });
         } catch (error) {
-            alert('Failed to generate quiz');
+            toast({
+                title: 'Generation failed',
+                description: error?.response?.data?.message || 'Could not generate quiz. Please try again.',
+                variant: 'destructive',
+            });
         } finally {
             setGenerating(false);
         }
@@ -119,8 +139,17 @@ const LectureDetail = () => {
         try {
             await flashcardService.update(flashcardId, data);
             await fetchLectureData();
+            toast({
+                title: 'Flashcard updated',
+                description: 'Your changes have been saved.',
+                variant: 'success',
+            });
         } catch (error) {
-            alert('Failed to update flashcard');
+            toast({
+                title: 'Update failed',
+                description: error?.response?.data?.message || 'Could not update the flashcard.',
+                variant: 'destructive',
+            });
         }
     };
 
@@ -128,17 +157,35 @@ const LectureDetail = () => {
         try {
             await flashcardService.delete(flashcardId);
             await fetchLectureData();
+            toast({
+                title: 'Flashcard deleted',
+                description: 'The flashcard has been removed.',
+                variant: 'success',
+            });
         } catch (error) {
-            alert('Failed to delete flashcard');
+            toast({
+                title: 'Delete failed',
+                description: error?.response?.data?.message || 'Could not delete the flashcard.',
+                variant: 'destructive',
+            });
         }
     };
 
     const handleSubmitQuiz = async (answers) => {
         try {
             const response = await quizService.submit(selectedQuiz._id, answers);
+            toast({
+                title: 'Quiz submitted',
+                description: 'Your answers have been submitted.',
+                variant: 'success',
+            });
             return response.data;
         } catch (error) {
-            alert('Failed to submit quiz');
+            toast({
+                title: 'Submit failed',
+                description: error?.response?.data?.message || 'Could not submit your quiz.',
+                variant: 'destructive',
+            });
         }
     };
 

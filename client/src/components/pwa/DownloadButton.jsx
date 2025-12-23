@@ -4,11 +4,13 @@ import { offlineStorage } from '../../utils/offlineStorage';
 import { lectureService } from '../../services/lectureService';
 import { flashcardService } from '../../services/flashcardService';
 import { quizService } from '../../services/quizService';
+import { useToast } from '@/hooks/use-toast';
 
 const DownloadButton = ({ lecture, onDownloadComplete }) => {
     const [isDownloaded, setIsDownloaded] = useState(false);
     const [downloading, setDownloading] = useState(false);
     const [progress, setProgress] = useState(0);
+    const { toast } = useToast();
 
     useEffect(() => {
         checkIfDownloaded();
@@ -52,9 +54,18 @@ const DownloadButton = ({ lecture, onDownloadComplete }) => {
 
             setIsDownloaded(true);
             if (onDownloadComplete) onDownloadComplete();
+            toast({
+                title: 'Available offline',
+                description: 'Lecture and related content cached successfully.',
+                variant: 'success',
+            });
         } catch (error) {
             console.error('Download failed:', error);
-            alert('Failed to download lecture for offline use');
+            toast({
+                title: 'Download failed',
+                description: error?.message || 'Could not cache lecture for offline use.',
+                variant: 'destructive',
+            });
         } finally {
             setDownloading(false);
             setProgress(0);
@@ -66,8 +77,18 @@ const DownloadButton = ({ lecture, onDownloadComplete }) => {
             try {
                 await offlineStorage.deleteLecture(lecture._id);
                 setIsDownloaded(false);
+                toast({
+                    title: 'Removed from offline',
+                    description: 'Lecture has been cleared from cache.',
+                    variant: 'success',
+                });
             } catch (error) {
                 console.error('Failed to remove:', error);
+                toast({
+                    title: 'Remove failed',
+                    description: error?.message || 'Could not remove cached lecture.',
+                    variant: 'destructive',
+                });
             }
         }
     };

@@ -2,9 +2,11 @@ import { useNavigate } from 'react-router-dom';
 import { FiFile, FiTrash2, FiClock } from 'react-icons/fi';
 import { lectureService } from '../../services/lectureService';
 import DownloadButton from '../pwa/DownloadButton';
+import { useToast } from '@/hooks/use-toast';
 
 const LectureList = ({ lectures, onDelete }) => {
     const navigate = useNavigate();
+    const { toast } = useToast();
 
     const handleDelete = async (id, e) => {
         e.stopPropagation();
@@ -12,8 +14,17 @@ const LectureList = ({ lectures, onDelete }) => {
             try {
                 await lectureService.delete(id);
                 if (onDelete) onDelete();
+                toast({
+                    title: 'Lecture deleted',
+                    description: 'The lecture has been removed successfully.',
+                    variant: 'success',
+                });
             } catch (err) {
-                alert('Failed to delete lecture');
+                toast({
+                    title: 'Delete failed',
+                    description: err?.response?.data?.message || 'An error occurred. Please try again.',
+                    variant: 'destructive',
+                });
             }
         }
     };

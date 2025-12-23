@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { useAuth } from '../../context/AuthContext';
 import { FiMail, FiLock, FiUser } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
+import { useToast } from '@/hooks/use-toast';
 
 const registerSchema = z.object({
     full_name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -22,6 +23,7 @@ const Register = () => {
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
     const { register: registerUser, loginWithGoogle } = useAuth();
     const navigate = useNavigate();
+    const { toast } = useToast();
 
     const {
         register,
@@ -36,9 +38,19 @@ const Register = () => {
 
         try {
             await registerUser(data.email, data.password, data.full_name);
+            toast({
+                title: 'Account created',
+                description: `Welcome, ${data.full_name}! Your account is ready.`,
+                variant: 'success',
+            });
             navigate('/dashboard');
         } catch (err) {
             setError(err.response?.data?.message || 'Registration failed. Please try again.');
+            toast({
+                title: 'Registration failed',
+                description: err?.response?.data?.message || 'An error occurred. Please try again.',
+                variant: 'destructive',
+            });
         }
     };
 
@@ -48,9 +60,19 @@ const Register = () => {
 
         try {
             await loginWithGoogle();
+            toast({
+                title: 'Signed up with Google',
+                description: 'Your account has been created via Google.',
+                variant: 'success',
+            });
             navigate('/dashboard');
         } catch (err) {
             setError(err.message || 'Google sign up failed. Please try again.');
+            toast({
+                title: 'Google sign up failed',
+                description: err?.message || 'An error occurred. Please try again.',
+                variant: 'destructive',
+            });
         } finally {
             setIsGoogleLoading(false);
         }
