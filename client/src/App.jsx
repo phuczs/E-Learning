@@ -11,6 +11,7 @@ import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import Dashboard from './pages/Dashboard';
 import LectureDetail from './pages/LectureDetail';
+import Admin from './pages/Admin';
 import './index.css';
 import { Toaster } from '@/components/ui/toast';
 
@@ -54,6 +55,14 @@ function App() {
                             element={
                                 <PrivateRoute>
                                     <LectureDetail />
+                                </PrivateRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin"
+                            element={
+                                <PrivateRoute>
+                                    <Admin />
                                 </PrivateRoute>
                             }
                         />

@@ -12,7 +12,8 @@ const flashcardSchema = new mongoose.Schema({
     },
     back_text: {
         type: String,
-        required: true
+        required: false,
+        default: ''
     },
     mastery_level: {
         type: Number,

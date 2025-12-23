@@ -11,6 +11,7 @@ import authRoutes from './routes/auth.js';
 import lectureRoutes from './routes/lectures.js';
 import flashcardRoutes from './routes/flashcards.js';
 import quizRoutes from './routes/quizzes.js';
+import adminRoutes from './routes/admin.js';
 
 // Load env vars
 dotenv.config();
@@ -46,6 +47,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/lectures', lectureRoutes);
 app.use('/api/flashcards', flashcardRoutes);
 app.use('/api/quizzes', quizRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

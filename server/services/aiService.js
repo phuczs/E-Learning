@@ -1,4 +1,5 @@
 import { Ollama } from 'ollama';
+import { startJob, endJob } from '../utils/jobTracker.js';
 
 let ollama = null;
 
@@ -23,6 +24,7 @@ const getOllama = () => {
  */
 export const generateSummary = async (text, tone = 'concise') => {
     try {
+        const jobId = startJob('summary');
         const toneInstructions = {
             concise: 'Create a brief, concise summary highlighting only the key points.',
             detailed: 'Create a comprehensive, detailed summary covering all important aspects.',
@@ -58,8 +60,12 @@ ${text.substring(0, 12000)}`; // Limit to avoid token limits
             }
         });
 
-        return response.message.content;
+        const result = response.message.content;
+        endJob(jobId);
+        return result;
     } catch (error) {
+        // Ensure job is ended on error
+        // We can't access jobId here if creation failed after start; guard by try/catch above
         console.error('Error generating summary:', error);
         throw new Error('Failed to generate summary: ' + error.message);
     }
@@ -73,6 +79,7 @@ ${text.substring(0, 12000)}`; // Limit to avoid token limits
  */
 export const generateFlashcards = async (text, count = 10) => {
     try {
+        const jobId = startJob('flashcards');
         const prompt = `Create ${count} educational flashcards from the following content. 
 Each flashcard should have a clear question (front) and a concise answer (back).
 Focus on key concepts, definitions, and important facts.
@@ -116,7 +123,9 @@ ${text.substring(0, 10000)}`;
             throw new Error('Invalid response format');
         }
 
-        return JSON.parse(jsonMatch[0]);
+        const parsed = JSON.parse(jsonMatch[0]);
+        endJob(jobId);
+        return parsed;
     } catch (error) {
         console.error('Error generating flashcards:', error);
         throw new Error('Failed to generate flashcards: ' + error.message);
@@ -131,6 +140,7 @@ ${text.substring(0, 10000)}`;
  */
 export const generateQuiz = async (text, questionCount = 5) => {
     try {
+        const jobId = startJob('quiz');
         const prompt = `Create a ${questionCount}-question multiple choice quiz from the following content.Generate at least 10 questions.
 Each question should have:
 - A clear question text
@@ -184,7 +194,9 @@ ${text.substring(0, 10000)}`;
             throw new Error('Invalid response format');
         }
 
-        return JSON.parse(jsonMatch[0]);
+        const parsed = JSON.parse(jsonMatch[0]);
+        endJob(jobId);
+        return parsed;
     } catch (error) {
         console.error('Error generating quiz:', error);
         throw new Error('Failed to generate quiz: ' + error.message);
