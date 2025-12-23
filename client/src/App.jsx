@@ -4,6 +4,8 @@ import Navbar from './components/layout/Navbar';
 import AppLayout from './components/layout/AppLayout';
 import PrivateRoute from './components/auth/PrivateRoute';
 import PublicRoute from './components/auth/PublicRoute';
+import InstallPrompt from './components/pwa/InstallPrompt';
+import OfflineIndicator from './components/pwa/OfflineIndicator';
 import Home from './pages/Home';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
@@ -16,6 +18,8 @@ function App() {
         <AuthProvider>
             <Router>
                 <AppLayout>
+                    <InstallPrompt />
+                    <OfflineIndicator />
                     <Navbar />
                     <Routes>
                         <Route path="/" element={<Home />} />

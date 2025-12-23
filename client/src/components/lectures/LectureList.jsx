@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { FiFile, FiTrash2, FiClock } from 'react-icons/fi';
 import { lectureService } from '../../services/lectureService';
+import DownloadButton from '../pwa/DownloadButton';
 
 const LectureList = ({ lectures, onDelete }) => {
     const navigate = useNavigate();
@@ -55,6 +56,8 @@ const LectureList = ({ lectures, onDelete }) => {
                     </div>
 
                     <h4 className="mb-2">{lecture.title}</h4>
+
+                    <DownloadButton lecture={lecture} />
 
                     <div className="flex gap-2" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
                         <FiClock />
