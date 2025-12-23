@@ -400,6 +400,66 @@ p {
   margin-bottom: var(--spacing-md);
 }
 
+/* Toast */
+.toast-viewport {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  z-index: 1000;
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 0.75rem 2.5rem 0.75rem 0.75rem;
+  min-width: 280px;
+  max-width: 420px;
+  animation: toast-in var(--transition-base);
+}
+
+.toast-success {
+  border-color: var(--success);
+}
+
+.toast-destructive {
+  border-color: var(--error);
+}
+
+.toast-title {
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.toast-description {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.toast-close {
+  position: absolute;
+  right: 0.5rem;
+  top: 0.5rem;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .flashcard-inner {
   position: relative;
   width: 100%;

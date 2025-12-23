@@ -12,12 +12,14 @@ import Register from './components/auth/Register';
 import Dashboard from './pages/Dashboard';
 import LectureDetail from './pages/LectureDetail';
 import './index.css';
+import { Toaster } from '@/components/ui/toast';
 
 function App() {
     return (
         <AuthProvider>
             <Router>
                 <AppLayout>
+                    <Toaster />
                     <InstallPrompt />
                     <OfflineIndicator />
                     <Navbar />
