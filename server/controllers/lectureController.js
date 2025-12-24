@@ -2,13 +2,14 @@ import Lecture from '../models/Lecture.js';
 import Summary from '../models/Summary.js';
 import { extractTextFromFile, getMediaType } from '../utils/fileProcessor.js';
 import { generateSummary } from '../services/aiService.js';
-import path from 'path';
-import fs from 'fs/promises';
+import { uploadToCloudinary, deleteFromCloudinary } from '../config/multer.js';
 
 // @desc    Upload lecture file
 // @route   POST /api/lectures/upload
 // @access  Private
 export const uploadLecture = async (req, res, next) => {
+    let uploadedFile = null;
+
     try {
         if (!req.file) {
             return res.status(400).json({ message: 'Please upload a file' });
@@ -17,14 +18,19 @@ export const uploadLecture = async (req, res, next) => {
         const { title, tone } = req.body;
         const mediaType = getMediaType(req.file.originalname);
 
-        // Extract text from file
-        const rawContent = await extractTextFromFile(req.file.path, mediaType);
+        // Upload file to Cloudinary
+        uploadedFile = await uploadToCloudinary(req.file, 'lectures');
 
-        // Create lecture
+        // Extract text from file buffer
+        const rawContent = await extractTextFromFile(req.file.buffer, mediaType, req.file.originalname);
+
+        // Create lecture with Cloudinary URL
         const lecture = await Lecture.create({
             user_id: req.user._id,
             title: title || req.file.originalname,
-            file_url: req.file.path,
+            file_url: uploadedFile.url,
+            file_path: uploadedFile.publicId, // Store Cloudinary public ID for deletion
+            resource_type: uploadedFile.resourceType, // Store resource type for deletion
             raw_content: rawContent,
             media_type: mediaType
         });
@@ -49,13 +55,14 @@ export const uploadLecture = async (req, res, next) => {
                 id: lecture._id,
                 title: lecture.title,
                 media_type: lecture.media_type,
+                file_url: lecture.file_url,
                 uploaded_at: lecture.uploaded_at
             }
         });
     } catch (error) {
         // Clean up uploaded file on error
-        if (req.file) {
-            await fs.unlink(req.file.path).catch(console.error);
+        if (uploadedFile) {
+            await deleteFromCloudinary(uploadedFile.publicId, uploadedFile.resourceType).catch(console.error);
         }
         next(error);
     }
@@ -125,8 +132,11 @@ export const deleteLecture = async (req, res, next) => {
             return res.status(403).json({ message: 'Not authorized' });
         }
 
-        // Delete file
-        await fs.unlink(lecture.file_url).catch(console.error);
+        // Delete file from Cloudinary
+        if (lecture.file_path) {
+            const resourceType = lecture.resource_type || 'raw';
+            await deleteFromCloudinary(lecture.file_path, resourceType).catch(console.error);
+        }
 
         // Delete lecture and related data
         await Lecture.findByIdAndDelete(req.params.id);
