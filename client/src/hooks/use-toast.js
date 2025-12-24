@@ -1,7 +1,8 @@
 import React from 'react';
 
 const TOAST_LIMIT = 3;
-const TOAST_REMOVE_DELAY = 5000;
+const TOAST_AUTO_DISMISS = 4000;
+const TOAST_REMOVE_DELAY = 200;
 
 let count = 0;
 function genId() {
@@ -10,6 +11,7 @@ function genId() {
 }
 
 const toastTimeouts = new Map();
+const autoDismissTimers = new Map();
 
 const listeners = [];
 
@@ -58,6 +60,22 @@ function reducer(state, action) {
   }
 }
 
+function startAutoDismiss(toastId) {
+  if (autoDismissTimers.has(toastId)) return;
+  const timer = setTimeout(
+    () => dispatch({ type: 'DISMISS_TOAST', toastId }),
+    TOAST_AUTO_DISMISS
+  );
+  autoDismissTimers.set(toastId, timer);
+}
+
+function clearAutoDismiss(toastId) {
+  const timer = autoDismissTimers.get(toastId);
+  if (!timer) return;
+  clearTimeout(timer);
+  autoDismissTimers.delete(toastId);
+}
+
 function dispatch(action) {
   memoryState = reducer(memoryState, action);
   for (const listener of listeners) {
@@ -67,6 +85,7 @@ function dispatch(action) {
 
 function addToRemoveQueue(toastId) {
   if (toastTimeouts.has(toastId)) return;
+  clearAutoDismiss(toastId);
   const timeout = setTimeout(() => {
     toastTimeouts.delete(toastId);
     dispatch({ type: 'REMOVE_TOAST', toastId });
@@ -91,6 +110,8 @@ function toast(props) {
       },
     },
   });
+
+  startAutoDismiss(id);
 
   return { id, dismiss, update };
 }
